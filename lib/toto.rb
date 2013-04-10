@@ -78,7 +78,7 @@ module Toto
       end}.merge archives
     end
 
-    def archives filter = ""
+    def archives filter = "", tag = nil
       entries = ! self.articles.empty??
         self.articles.select do |a|
           filter !~ /^\d{4}/ || File.basename(a) =~ /^#{filter}/
@@ -86,7 +86,15 @@ module Toto
           Article.new article, @config
         end : []
 
-      return :archives => Archives.new(entries, @config)
+      if tag.nil?
+        { :archives => Archives.new(entries, @config) }
+      else 
+        tagged = entries.select do |article|
+          article_tag = article.tags
+          article_tag && article.tags.gsub(/\s+/, "").split(",").include?(tag)
+        end 
+        { :tag => tag, :archives => tagged } if tagged.size > 0 
+      end
     end
 
     def article route
@@ -113,6 +121,14 @@ module Toto
               context[article(route), :article]
             else http 400
           end
+          
+        elsif route.first == 'tag' && route.size == 2 
+          if (data = archives('', route[1])).nil?
+            http 404
+          else 
+            context[data, :tag]
+          end
+        
         elsif respond_to?(path)
           context[send(path, type), path.to_sym]
         elsif (repo = @config[:github][:repos].grep(/#{path}/).first) &&
@@ -276,6 +292,7 @@ module Toto
     end
 
     def title()   self[:title] || "an article"               end
+    def tags()    self[:tags]  || ""                         end
     def date()    @config[:date].call(self[:date])           end
     def author()  self[:author] || @config[:author]          end
     def to_html() self.load; super(:article, @config)        end
