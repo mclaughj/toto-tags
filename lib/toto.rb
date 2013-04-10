@@ -293,6 +293,7 @@ module Toto
 
     def title()   self[:title] || "an article"               end
     def tags()    self[:tags]  || ""                         end
+    def link()    self[:link]  || ""                         end
     def date()    @config[:date].call(self[:date])           end
     def author()  self[:author] || @config[:author]          end
     def to_html() self.load; super(:article, @config)        end
